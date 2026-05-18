@@ -1,0 +1,42 @@
+{% extends "base/base.html" %}
+{% block title %}{{ titre }} — GestionFrais{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'accounts:gestion_utilisateurs' %}">Utilisateurs</a>
+<span class="breadcrumb-sep">/</span>
+<span class="breadcrumb-active">{{ titre }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ titre }}</h1>
+    <p class="page-subtitle">Renseignez les informations du compte</p>
+  </div>
+</div>
+
+<div style="max-width:600px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="bi bi-person"></i> Compte utilisateur</span>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="form-error">{{ field.errors.0 }}</div>{% endif %}
+          {% if field.help_text %}<div class="form-hint">{{ field.help_text }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="divider"></div>
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Enregistrer</button>
+          <a href="{% url 'accounts:gestion_utilisateurs' %}" class="btn btn-outline">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

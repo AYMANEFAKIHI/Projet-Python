@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GestionFrais{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">💼</div>
+    <div>
+      <div class="brand-name">GestionFrais</div>
+      <div class="brand-tagline">Frais de déplacement</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/dashboard/" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">
+      <i class="bi bi-grid-1x2"></i> Tableau de bord
+    </a>
+    <a href="{% url 'missions:liste' %}" class="nav-link {% if '/missions/' in request.path %}active{% endif %}">
+      <i class="bi bi-geo-alt"></i> Missions
+    </a>
+    <a href="{% url 'frais:liste' %}" class="nav-link {% if '/frais/' in request.path and '/rapports/' not in request.path %}active{% endif %}">
+      <i class="bi bi-receipt"></i> Frais
+    </a>
+    {% if user.is_admin or user.is_manager_role %}
+    <span class="nav-section-label">Gestion</span>
+    <a href="{% url 'rapports:index' %}" class="nav-link {% if '/rapports/' in request.path %}active{% endif %}">
+      <i class="bi bi-bar-chart-line"></i> Rapports
+    </a>
+    {% endif %}
+    {% if user.is_admin %}
+    <span class="nav-section-label">Administration</span>
+    <a href="{% url 'accounts:gestion_utilisateurs' %}" class="nav-link {% if '/utilisateurs/' in request.path %}active{% endif %}">
+      <i class="bi bi-people"></i> Utilisateurs
+    </a>
+    <a href="/admin/" class="nav-link">
+      <i class="bi bi-terminal"></i> Admin Django
+    </a>
+    {% endif %}
+  </nav>
+  <div class="sidebar-footer">
+    <a href="{% url 'accounts:profil' %}" class="user-card">
+      <div class="user-avatar">{{ user.first_name|first|upper|default:user.username|first|upper }}</div>
+      <div>
+        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+        <div class="user-role">{{ user.get_role_display }}</div>
+      </div>
+    </a>
+    <a href="{% url 'accounts:logout' %}" class="logout-btn">
+      <i class="bi bi-box-arrow-right"></i> Déconnexion
+    </a>
+  </div>
+</aside>
+
+<div class="main-content" id="main-content">
+  <header class="topbar">
+    <button class="topbar-btn" id="sidebar-toggle"><i class="bi bi-list"></i></button>
+    <nav class="breadcrumb">
+      <a href="/dashboard/">Accueil</a>
+      <span class="breadcrumb-sep">/</span>
+      {% block breadcrumb %}{% endblock %}
+    </nav>
+    <div class="topbar-end">
+      <span class="role-chip {% if user.is_admin %}admin{% elif user.is_manager_role %}manager{% else %}employe{% endif %}">
+        {{ user.get_role_display }}
+      </span>
+    </div>
+  </header>
+
+  <main class="page-content">
+    {% if messages %}
+    <div class="messages-wrapper">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">
+        {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill"></i>
+        {% elif message.tags == 'danger' or message.tags == 'error' %}<i class="bi bi-exclamation-circle-fill"></i>
+        {% elif message.tags == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>
+        {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+        {{ message }}
+        <button class="btn-close" onclick="this.parentElement.remove()">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+{% else %}
+<div class="auth-bg"></div>
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="/static/js/main.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,103 @@
+{% extends "base/base.html" %}
+{% block title %}{{ mission.destination }} — GestionFrais{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'missions:liste' %}">Missions</a><span class="breadcrumb-sep">/</span>
+<span class="breadcrumb-active">{{ mission.destination }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><i class="bi bi-geo-alt-fill" style="color:var(--accent);font-size:18px;"></i> {{ mission.destination }}</h1>
+    <p class="page-subtitle">{{ mission.date_debut }} → {{ mission.date_fin }} · {{ mission.duree }} jour(s)</p>
+  </div>
+  {% if user == mission.employe or user.is_admin %}
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'missions:modifier' mission.pk %}" class="btn btn-outline btn-sm"><i class="bi bi-pencil"></i> Modifier</a>
+    <a href="{% url 'missions:supprimer' mission.pk %}" class="btn btn-ghost btn-sm" style="color:var(--danger)"><i class="bi bi-trash"></i></a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="detail-grid">
+  <!-- Info card -->
+  <div>
+    <div class="card mb-3">
+      <div class="card-header">
+        <span class="card-title"><i class="bi bi-info-circle"></i> Informations</span>
+        {% if mission.statut == 'en_cours' %}<span class="badge badge-ongoing">En cours</span>
+        {% elif mission.statut == 'terminee' %}<span class="badge badge-done">Terminée</span>
+        {% else %}<span class="badge badge-refused">Annulée</span>{% endif %}
+      </div>
+      <div class="card-body">
+        <div class="detail-row">
+          <span class="detail-key">Destination</span>
+          <span class="detail-val">{{ mission.destination }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Période</span>
+          <span class="detail-val">{{ mission.date_debut }} → {{ mission.date_fin }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Durée</span>
+          <span class="detail-val">{{ mission.duree }} jour(s)</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Employé</span>
+          <span class="detail-val">{{ mission.employe.get_full_name|default:mission.employe.username }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Total frais</span>
+          <span class="detail-val" style="font-family:'Syne',sans-serif;font-size:18px;color:var(--accent);">{{ mission.total_frais|floatformat:2 }} MAD</span>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Objectif</div>
+        <div style="font-size:13.5px;color:var(--text-secondary);line-height:1.6;">{{ mission.objectif }}</div>
+      </div>
+    </div>
+
+    {% if user == mission.employe %}
+    <a href="{% url 'frais:creer' %}" class="btn btn-primary btn-block btn-sm">
+      <i class="bi bi-plus-circle"></i> Ajouter un frais
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Frais table -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="bi bi-receipt"></i> Frais associés ({{ frais.count }})</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Montant</th><th>Date</th><th>Statut</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for f in frais %}
+          <tr>
+            <td>
+              {% if f.type_frais == 'transport' %}<span class="badge badge-transport">{{ f.get_type_frais_display }}</span>
+              {% elif f.type_frais == 'hebergement' %}<span class="badge badge-hebergement">{{ f.get_type_frais_display }}</span>
+              {% elif f.type_frais == 'restauration' %}<span class="badge badge-restauration">{{ f.get_type_frais_display }}</span>
+              {% else %}<span class="badge badge-autre">{{ f.get_type_frais_display }}</span>{% endif %}
+            </td>
+            <td class="td-mono">{{ f.montant|floatformat:2 }} MAD</td>
+            <td class="td-muted">{{ f.date_frais }}</td>
+            <td>{% include "includes/badge_statut.html" with statut=f.statut label=f.get_statut_display %}</td>
+            <td><a href="{% url 'frais:detail' f.pk %}" class="btn btn-ghost btn-icon btn-sm"><i class="bi bi-eye"></i></a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">
+            <div class="empty-state" style="padding:28px 20px;">
+              <i class="bi bi-receipt empty-icon"></i>
+              <div class="empty-title">Aucun frais</div>
+            </div>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

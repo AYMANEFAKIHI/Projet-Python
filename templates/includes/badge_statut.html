@@ -1,0 +1,5 @@
+{% if statut == 'en_attente' %}<span class="badge badge-pending">{{ label }}</span>
+{% elif statut == 'valide' %}<span class="badge badge-valid">{{ label }}</span>
+{% elif statut == 'refuse' %}<span class="badge badge-refused">{{ label }}</span>
+{% elif statut == 'rembourse' %}<span class="badge badge-paid">{{ label }}</span>
+{% else %}<span class="badge badge-done">{{ label }}</span>{% endif %}

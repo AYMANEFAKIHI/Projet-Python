@@ -1,0 +1,284 @@
+{% extends "base/base.html" %}
+{% block title %}Tableau de bord — GestionFrais{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Tableau de bord</h1>
+    <p class="page-subtitle">Bonjour, <strong>{{ user.get_full_name|default:user.username }}</strong> — voici votre vue d'ensemble</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    {% if user.is_employe %}
+    <a href="{% url 'missions:creer' %}" class="btn btn-outline btn-sm"><i class="bi bi-plus"></i> Nouvelle mission</a>
+    <a href="{% url 'frais:creer' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus"></i> Déclarer un frais</a>
+    {% endif %}
+    {% if user.is_admin or user.is_manager_role %}
+    <a href="{% url 'frais:liste' %}?statut=en_attente" class="btn btn-warning btn-sm"><i class="bi bi-clock"></i> Frais en attente</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid">
+  {% if user.is_admin %}
+  <div class="kpi-card c-blue">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ total_users }}</div><div class="kpi-label">Utilisateurs actifs</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-people-fill"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-green">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ total_missions }}</div><div class="kpi-label">Total missions</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-geo-alt-fill"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-amber">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ frais_en_attente }}</div><div class="kpi-label">En attente</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-hourglass-split"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-teal">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ total_rembourse|floatformat:0 }} MAD</div><div class="kpi-label">Remboursé</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-cash-stack"></i></div>
+    </div>
+  </div>
+
+  {% elif user.is_manager_role %}
+  <div class="kpi-card c-blue">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ nb_employes }}</div><div class="kpi-label">Membres d'équipe</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-people-fill"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-amber">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ frais_en_attente }}</div><div class="kpi-label">À valider</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-hourglass-split"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-green">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ frais_valides }}</div><div class="kpi-label">Validés</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-check-circle-fill"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-teal">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ total_rembourse|floatformat:0 }} MAD</div><div class="kpi-label">Remboursé</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-cash-stack"></i></div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Employé -->
+  <div class="kpi-card c-blue">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ mes_missions }}</div><div class="kpi-label">Mes missions</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-geo-alt-fill"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-amber">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ frais_en_attente }}</div><div class="kpi-label">En attente</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-hourglass-split"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-green">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ frais_valides }}</div><div class="kpi-label">Validés</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-check-circle-fill"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-teal">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ total_rembourse|floatformat:0 }} MAD</div><div class="kpi-label">Remboursé</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-cash-stack"></i></div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Content grid -->
+<div class="row" style="gap:18px;align-items:flex-start;">
+
+  <!-- Colonne principale -->
+  <div class="col-2" style="display:flex;flex-direction:column;gap:18px;">
+
+    <!-- Missions récentes (Employé et Admin) -->
+    {% if missions_recentes %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="bi bi-geo-alt"></i>
+          {% if user.is_admin %}Missions récentes{% elif user.is_manager_role %}Missions de l'équipe{% else %}Mes missions récentes{% endif %}
+        </span>
+        <a href="{% url 'missions:liste' %}" class="btn btn-ghost btn-sm">Tout voir <i class="bi bi-arrow-right"></i></a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {% if user.is_admin or user.is_manager_role %}<th>Employé</th>{% endif %}
+              <th>Destination</th><th>Dates</th><th>Durée</th><th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in missions_recentes %}
+            <tr style="cursor:pointer" onclick="window.location='{% url 'missions:detail' m.pk %}'">
+              {% if user.is_admin or user.is_manager_role %}
+              <td class="td-muted">{{ m.employe.get_full_name|default:m.employe.username }}</td>
+              {% endif %}
+              <td class="td-bold">{{ m.destination }}</td>
+              <td class="td-muted" style="font-size:12px;">{{ m.date_debut|date:"d/m/Y" }} → {{ m.date_fin|date:"d/m/Y" }}</td>
+              <td class="td-muted">{{ m.duree }} j</td>
+              <td>
+                {% if m.statut == 'en_cours' %}<span class="badge badge-valid">En cours</span>
+                {% elif m.statut == 'planifiee' %}<span class="badge badge-pending">Planifiée</span>
+                {% elif m.statut == 'terminee' %}<span class="badge" style="background:var(--border-subtle);color:var(--text-muted);">Terminée</span>
+                {% else %}<span class="badge badge-refused">Annulée</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">
+              <div class="empty-state" style="padding:24px;">
+                <i class="bi bi-geo-alt empty-icon"></i>
+                <div class="empty-title">Aucune mission</div>
+                {% if user.is_employe %}
+                <a href="{% url 'missions:creer' %}" class="btn btn-primary btn-sm" style="margin-top:10px;">Créer une mission</a>
+                {% endif %}
+              </div>
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Frais récents -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="bi bi-clock-history"></i>
+          {% if user.is_employe %}Mes frais récents{% else %}Frais récents{% endif %}
+        </span>
+        <a href="{% url 'frais:liste' %}" class="btn btn-ghost btn-sm">Tout voir <i class="bi bi-arrow-right"></i></a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {% if user.is_admin or user.is_manager_role %}<th>Employé</th>{% endif %}
+              <th>Mission</th><th>Type</th><th>Montant</th><th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in frais_recents %}
+            <tr style="cursor:pointer" onclick="window.location='{% url 'frais:detail' f.pk %}'">
+              {% if user.is_admin or user.is_manager_role %}
+              <td class="td-muted">{{ f.employe.get_full_name|default:f.employe.username }}</td>
+              {% endif %}
+              <td class="td-bold">{{ f.mission.destination }}</td>
+              <td>
+                {% if f.type_frais == 'transport' %}<span class="badge badge-transport">{{ f.get_type_frais_display }}</span>
+                {% elif f.type_frais == 'hebergement' %}<span class="badge badge-hebergement">{{ f.get_type_frais_display }}</span>
+                {% elif f.type_frais == 'restauration' %}<span class="badge badge-restauration">{{ f.get_type_frais_display }}</span>
+                {% else %}<span class="badge badge-autre">{{ f.get_type_frais_display }}</span>{% endif %}
+              </td>
+              <td class="td-mono">{{ f.montant|floatformat:2 }} MAD</td>
+              <td>{% include "includes/badge_statut.html" with statut=f.statut label=f.get_statut_display %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">
+              <div class="empty-state" style="padding:32px 20px;">
+                <i class="bi bi-inbox empty-icon"></i>
+                <div class="empty-title">Aucun frais déclaré</div>
+                {% if user.is_employe %}
+                <a href="{% url 'frais:creer' %}" class="btn btn-primary btn-sm" style="margin-top:10px;">Déclarer un frais</a>
+                {% endif %}
+              </div>
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Colonne latérale -->
+  <div class="col" style="min-width:220px;display:flex;flex-direction:column;gap:18px;">
+
+    <!-- Stats par type (Admin) -->
+    {% if user.is_admin and stats_par_type %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="bi bi-pie-chart"></i> Par type</span>
+      </div>
+      <div class="card-body">
+        {% for s in stats_par_type %}
+        <div style="margin-bottom:14px;">
+          <div class="flex-between mb-1">
+            <span style="font-size:13px;color:var(--text-secondary);">
+              {% if s.type_frais == 'transport' %}🚌{% elif s.type_frais == 'hebergement' %}🏨{% elif s.type_frais == 'restauration' %}🍽️{% else %}📦{% endif %}
+              {{ s.type_frais|capfirst }}
+            </span>
+            <span style="font-size:12px;font-weight:600;color:var(--accent);">{{ s.total|floatformat:0 }} MAD</span>
+          </div>
+          <div class="stat-bar-wrap">
+            <div class="stat-bar-fill" style="width:{{ s.nb }}0%"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Équipe (Manager) -->
+    {% if user.is_manager_role and equipe %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="bi bi-people"></i> Mon équipe</span>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+        {% for emp in equipe %}
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7c5cfc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">
+            {{ emp.first_name|first|upper|default:emp.username|first|upper }}
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;">{{ emp.get_full_name|default:emp.username }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">{{ emp.departement|default:"—" }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions rapides -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="bi bi-lightning-charge"></i> Actions rapides</span>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+        {% if user.is_employe %}
+        <a href="{% url 'missions:creer' %}" class="btn btn-outline btn-block btn-sm"><i class="bi bi-plus-circle"></i> Nouvelle mission</a>
+        <a href="{% url 'frais:creer' %}" class="btn btn-primary btn-block btn-sm"><i class="bi bi-plus-circle"></i> Déclarer un frais</a>
+        {% endif %}
+        {% if user.is_admin or user.is_manager_role %}
+        <a href="{% url 'frais:liste' %}?statut=en_attente" class="btn btn-warning btn-block btn-sm"><i class="bi bi-clock"></i> Frais en attente</a>
+        <a href="{% url 'rapports:index' %}" class="btn btn-outline btn-block btn-sm"><i class="bi bi-bar-chart-line"></i> Rapports</a>
+        {% endif %}
+        {% if user.is_admin %}
+        <a href="{% url 'accounts:creer_utilisateur' %}" class="btn btn-outline btn-block btn-sm"><i class="bi bi-person-plus"></i> Nouvel utilisateur</a>
+        {% endif %}
+        <a href="{% url 'missions:liste' %}" class="btn btn-ghost btn-block btn-sm"><i class="bi bi-geo-alt"></i> Toutes les missions</a>
+        <a href="{% url 'frais:liste' %}" class="btn btn-ghost btn-block btn-sm"><i class="bi bi-receipt"></i> Tous les frais</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

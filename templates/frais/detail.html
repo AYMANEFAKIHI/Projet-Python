@@ -1,0 +1,146 @@
+{% extends "base/base.html" %}
+{% block title %}Frais — {{ frais.get_type_frais_display }}{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'frais:liste' %}">Frais</a><span class="breadcrumb-sep">/</span>
+<span class="breadcrumb-active">Détail</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ frais.get_type_frais_display }}</h1>
+    <p class="page-subtitle">{{ frais.mission.destination }} — {{ frais.date_frais }}</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% if frais.peut_modifier and user == frais.employe %}
+    <a href="{% url 'frais:modifier' frais.pk %}" class="btn btn-outline btn-sm"><i class="bi bi-pencil"></i> Modifier</a>
+    <a href="{% url 'frais:supprimer' frais.pk %}" class="btn btn-ghost btn-sm" style="color:var(--danger)"><i class="bi bi-trash"></i> Supprimer</a>
+    {% endif %}
+    {% if frais.statut == 'en_attente' and user.is_manager_role or frais.statut == 'en_attente' and user.is_admin %}
+    <a href="{% url 'frais:valider' frais.pk %}" class="btn btn-success btn-sm"><i class="bi bi-check2-circle"></i> Valider / Refuser</a>
+    {% endif %}
+    {% if frais.statut == 'valide' and user.is_admin %}
+    <form method="post" action="{% url 'frais:rembourse' frais.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-info btn-sm"><i class="bi bi-cash"></i> Marquer remboursé</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="card" style="align-self:start;">
+    <div class="card-header">
+      <span class="card-title"><i class="bi bi-info-circle"></i> Informations</span>
+      {% include "includes/badge_statut.html" with statut=frais.statut label=frais.get_statut_display %}
+    </div>
+    <div class="card-body">
+      <div class="detail-row">
+        <span class="detail-key">Montant</span>
+        <span class="detail-val" style="font-family:'Syne',sans-serif;font-size:20px;color:var(--accent);">{{ frais.montant|floatformat:2 }} MAD</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Type</span>
+        <span class="detail-val">
+          {% if frais.type_frais == 'transport' %}<span class="badge badge-transport">{{ frais.get_type_frais_display }}</span>
+          {% elif frais.type_frais == 'hebergement' %}<span class="badge badge-hebergement">{{ frais.get_type_frais_display }}</span>
+          {% elif frais.type_frais == 'restauration' %}<span class="badge badge-restauration">{{ frais.get_type_frais_display }}</span>
+          {% else %}<span class="badge badge-autre">{{ frais.get_type_frais_display }}</span>{% endif %}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Date</span>
+        <span class="detail-val">{{ frais.date_frais }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Mission</span>
+        <span class="detail-val"><a href="{% url 'missions:detail' frais.mission.pk %}" style="color:var(--accent);text-decoration:none;">{{ frais.mission.destination }}</a></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Employé</span>
+        <span class="detail-val">{{ frais.employe.get_full_name|default:frais.employe.username }}</span>
+      </div>
+      {% if frais.description %}
+      <div class="detail-row" style="flex-direction:column;gap:6px;">
+        <span class="detail-key">Description</span>
+        <span style="color:var(--text-secondary);font-size:13.5px;line-height:1.5;">{{ frais.description }}</span>
+      </div>
+      {% endif %}
+      {% if frais.validé_par %}
+      <div class="divider"></div>
+      <div class="detail-row">
+        <span class="detail-key">Décidé par</span>
+        <span class="detail-val">{{ frais.validé_par.get_full_name }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Le</span>
+        <span class="detail-val">{{ frais.date_validation|date:"d/m/Y H:i" }}</span>
+      </div>
+      {% endif %}
+      {% if frais.commentaire_manager %}
+      <div class="divider"></div>
+      <div style="background:var(--warning-soft);border:1px solid rgba(245,166,35,.2);border-radius:var(--radius-sm);padding:12px 14px;">
+        <div style="font-size:11px;font-weight:600;color:var(--warning);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px;">Commentaire manager</div>
+        <div style="font-size:13.5px;color:var(--text-secondary);line-height:1.5;">{{ frais.commentaire_manager }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="bi bi-paperclip"></i> Justificatifs ({{ justificatifs.count }})</span>
+      </div>
+      <div class="card-body">
+        {% if justificatifs %}
+        <div class="justif-grid mb-3">
+          {% for j in justificatifs %}
+          <div class="justif-card">
+            {% if j.is_image %}
+            <img src="{{ j.fichier.url }}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:8px;" alt="{{ j.nom_original }}">
+            {% else %}
+            <i class="bi bi-file-pdf justif-icon" style="color:var(--danger);"></i>
+            {% endif %}
+            <div class="justif-name">{{ j.nom_original }}</div>
+            <div style="display:flex;gap:4px;margin-top:6px;">
+              <a href="{% url 'frais:telecharger_justif' j.pk %}" class="btn btn-outline btn-sm" style="flex:1;"><i class="bi bi-download"></i></a>
+              {% if frais.peut_modifier and user == frais.employe %}
+              <form method="post" action="{% url 'frais:supprimer_justif' j.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost btn-sm btn-icon" style="color:var(--danger);" title="Supprimer" onclick="return confirm('Supprimer ce justificatif ?')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if frais.peut_modifier and user == frais.employe %}
+        {% if justificatifs %}<div class="divider"></div>{% endif %}
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;font-weight:500;">Ajouter un justificatif (PDF, JPG, PNG — max 5 Mo)</div>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="upload_justif" value="1">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            {{ justif_form.fichier }}
+            <button type="submit" class="btn btn-success btn-sm" style="flex-shrink:0;"><i class="bi bi-upload"></i></button>
+          </div>
+          {% if justif_form.fichier.errors %}<div class="form-error mt-1">{{ justif_form.fichier.errors.0 }}</div>{% endif %}
+        </form>
+        {% endif %}
+
+        {% if not justificatifs and not frais.peut_modifier %}
+        <div class="empty-state" style="padding:30px 20px;">
+          <i class="bi bi-paperclip empty-icon"></i>
+          <div class="empty-title">Aucun justificatif</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

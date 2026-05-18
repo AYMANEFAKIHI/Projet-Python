@@ -1,0 +1,97 @@
+{% extends "base/base.html" %}
+{% block title %}Frais — GestionFrais{% endblock %}
+{% block breadcrumb %}<span class="breadcrumb-active">Frais</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Frais de déplacement</h1>
+    <p class="page-subtitle">{% if user.is_admin or user.is_manager_role %}Tous les frais de votre périmètre{% else %}Vos déclarations de frais{% endif %}</p>
+  </div>
+  {% if not user.is_admin and not user.is_manager_role %}
+  <a href="{% url 'frais:creer' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Déclarer un frais</a>
+  {% endif %}
+</div>
+
+<!-- Filtres -->
+<div class="filter-bar">
+  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%">
+    <i class="bi bi-funnel text-muted"></i>
+    <select name="statut">
+      <option value="">Tous les statuts</option>
+      {% for val, lbl in statut_choices %}
+      <option value="{{ val }}" {% if statut_filtre == val %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+    <select name="type">
+      <option value="">Tous les types</option>
+      {% for val, lbl in type_choices %}
+      <option value="{{ val }}" {% if type_filtre == val %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-search"></i> Filtrer</button>
+    <a href="{% url 'frais:liste' %}" class="btn btn-ghost btn-sm">Réinitialiser</a>
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          {% if user.is_admin or user.is_manager_role %}<th>Employé</th>{% endif %}
+          <th>Mission</th><th>Type</th><th>Montant</th><th>Date</th><th>Statut</th><th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in frais_list %}
+        <tr>
+          {% if user.is_admin or user.is_manager_role %}
+          <td class="td-muted">{{ f.employe.get_full_name|default:f.employe.username }}</td>
+          {% endif %}
+          <td class="td-bold">{{ f.mission.destination }}</td>
+          <td>
+            {% if f.type_frais == 'transport' %}<span class="badge badge-transport">{{ f.get_type_frais_display }}</span>
+            {% elif f.type_frais == 'hebergement' %}<span class="badge badge-hebergement">{{ f.get_type_frais_display }}</span>
+            {% elif f.type_frais == 'restauration' %}<span class="badge badge-restauration">{{ f.get_type_frais_display }}</span>
+            {% else %}<span class="badge badge-autre">{{ f.get_type_frais_display }}</span>{% endif %}
+          </td>
+          <td class="td-mono">{{ f.montant|floatformat:2 }} MAD</td>
+          <td class="td-muted">{{ f.date_frais }}</td>
+          <td>{% include "includes/badge_statut.html" with statut=f.statut label=f.get_statut_display %}</td>
+          <td>
+            <div class="td-actions" style="justify-content:flex-end;">
+              <a href="{% url 'frais:detail' f.pk %}" class="btn btn-ghost btn-icon btn-sm" title="Voir"><i class="bi bi-eye"></i></a>
+              {% if f.peut_modifier and user == f.employe %}
+              <a href="{% url 'frais:modifier' f.pk %}" class="btn btn-ghost btn-icon btn-sm" title="Modifier"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'frais:supprimer' f.pk %}" class="btn btn-ghost btn-icon btn-sm" title="Supprimer" style="color:var(--danger)"><i class="bi bi-trash"></i></a>
+              {% endif %}
+              {% if f.statut == 'en_attente' and user.is_manager_role or f.statut == 'en_attente' and user.is_admin %}
+              <a href="{% url 'frais:valider' f.pk %}" class="btn btn-success btn-sm"><i class="bi bi-check2-circle"></i> Valider</a>
+              {% endif %}
+              {% if f.statut == 'valide' and user.is_admin %}
+              <form method="post" action="{% url 'frais:rembourse' f.pk %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-info btn-sm"><i class="bi bi-cash"></i> Rembourser</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state">
+            <i class="bi bi-receipt empty-icon"></i>
+            <div class="empty-title">Aucun frais trouvé</div>
+            <div class="empty-desc">{% if not user.is_admin and not user.is_manager_role %}Commencez par déclarer votre premier frais.{% endif %}</div>
+            {% if not user.is_admin and not user.is_manager_role %}
+            <a href="{% url 'frais:creer' %}" class="btn btn-primary btn-sm">Déclarer un frais</a>
+            {% endif %}
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

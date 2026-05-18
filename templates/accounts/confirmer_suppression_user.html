@@ -1,0 +1,19 @@
+{% extends "base/base.html" %}
+{% block title %}Désactiver un utilisateur — GestionFrais{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:center;padding-top:40px;">
+  <div class="danger-card">
+    <div style="font-size:40px;margin-bottom:16px;">⚠️</div>
+    <h2 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text-primary);">Désactiver l'utilisateur</h2>
+    <p style="font-size:13.5px;color:var(--text-secondary);margin-bottom:6px;">L'utilisateur suivant sera désactivé (il ne pourra plus se connecter) :</p>
+    <p style="font-size:13.5px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">{{ obj.get_full_name|default:obj.username }} (@{{ obj.username }})</p>
+    <p style="font-size:12px;color:var(--danger);margin-bottom:24px;">Ses données seront conservées mais son accès sera révoqué.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <form method="post">{% csrf_token %}
+        <button type="submit" class="btn btn-danger"><i class="bi bi-person-x"></i> Désactiver</button>
+      </form>
+      <a href="{% url 'accounts:gestion_utilisateurs' %}" class="btn btn-outline">Annuler</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

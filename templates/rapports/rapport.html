@@ -1,0 +1,198 @@
+{% extends "base/base.html" %}
+{% block title %}Rapports — GestionFrais{% endblock %}
+{% block breadcrumb %}<span class="breadcrumb-active">Rapports</span>{% endblock %}
+
+{% block extra_css %}
+<style>
+.chart-bar-container { display:flex; flex-direction:column; gap:14px; }
+.chart-row { display:flex; align-items:center; gap:10px; }
+.chart-label { font-size:12.5px; color:var(--text-secondary); min-width:110px; text-align:right; }
+.chart-bar-outer { flex:1; background:var(--border-subtle); border-radius:4px; height:10px; overflow:hidden; }
+.chart-bar-inner { height:100%; border-radius:4px; transition:width .5s ease; }
+.chart-val { font-size:12px; font-weight:600; color:var(--text-primary); min-width:80px; font-family:'Syne',sans-serif; }
+.employe-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-subtle); }
+.employe-row:last-child { border-bottom:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Rapports & Statistiques</h1>
+    <p class="page-subtitle">Analyse des dépenses de votre périmètre</p>
+  </div>
+  <a href="{% url 'rapports:export_csv' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-success">
+    <i class="bi bi-download"></i> Exporter CSV
+  </a>
+</div>
+
+<!-- Filtres -->
+<div class="filter-bar mb-4">
+  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%">
+    <i class="bi bi-funnel text-muted"></i>
+    {% if user.is_admin %}
+    <select name="employe">
+      <option value="">Tous les employés</option>
+      {% for e in employes %}
+      <option value="{{ e.pk }}" {% if employe_id == e.pk|stringformat:'s' %}selected{% endif %}>
+        {{ e.get_full_name|default:e.username }}
+      </option>
+      {% endfor %}
+    </select>
+    {% endif %}
+    <select name="type">
+      <option value="">Tous les types</option>
+      {% for val, lbl in type_choices %}
+      <option value="{{ val }}" {% if type_filtre == val %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+    <select name="periode">
+      <option value="">Toutes périodes</option>
+      <option value="mois"  {% if periode == 'mois'  %}selected{% endif %}>Ce mois</option>
+      <option value="annee" {% if periode == 'annee' %}selected{% endif %}>Cette année</option>
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-search"></i> Appliquer</button>
+    <a href="{% url 'rapports:index' %}" class="btn btn-ghost btn-sm">Réinitialiser</a>
+  </form>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid mb-4">
+  <div class="kpi-card c-blue">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ nb_frais }}</div><div class="kpi-label">Total frais</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-receipt-cutoff"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-teal">
+    <div class="kpi-top">
+      <div><div class="kpi-value">{{ total_global|floatformat:0 }} MAD</div><div class="kpi-label">Montant total</div></div>
+      <div class="kpi-icon-box"><i class="bi bi-cash-stack"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-amber">
+    <div class="kpi-top">
+      <div>
+        <div class="kpi-value">{% for s in stats_statut %}{% if s.statut == 'en_attente' %}{{ s.nb }}{% endif %}{% endfor %}</div>
+        <div class="kpi-label">En attente</div>
+      </div>
+      <div class="kpi-icon-box"><i class="bi bi-hourglass-split"></i></div>
+    </div>
+  </div>
+  <div class="kpi-card c-green">
+    <div class="kpi-top">
+      <div>
+        <div class="kpi-value">{% for s in stats_statut %}{% if s.statut == 'rembourse' %}{{ s.total|floatformat:0 }}{% endif %}{% endfor %} MAD</div>
+        <div class="kpi-label">Remboursé</div>
+      </div>
+      <div class="kpi-icon-box"><i class="bi bi-check-circle-fill"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row" style="gap:18px;align-items:flex-start;">
+
+  <!-- Par statut -->
+  <div class="col">
+    <div class="card">
+      <div class="card-header"><span class="card-title"><i class="bi bi-pie-chart"></i> Par statut</span></div>
+      <div class="card-body">
+        {% if stats_statut %}
+        <div class="chart-bar-container">
+          {% for s in stats_statut %}
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                {% include "includes/badge_statut.html" with statut=s.statut label=s.statut|capfirst %}
+                <span style="font-size:11.5px;color:var(--text-muted);">{{ s.nb }} frais</span>
+              </div>
+              <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);">{{ s.total|floatformat:0 }} MAD</span>
+            </div>
+            {% if total_global > 0 %}
+            <div class="chart-bar-outer">
+              <div class="chart-bar-inner" style="width:{% widthratio s.total total_global 100 %}%;
+                {% if s.statut == 'valide' %}background:var(--success){% elif s.statut == 'refuse' %}background:var(--danger){% elif s.statut == 'rembourse' %}background:var(--info){% else %}background:var(--warning){% endif %}">
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:28px 20px;"><i class="bi bi-bar-chart empty-icon"></i><div class="empty-title">Aucune donnée</div></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Par type -->
+  <div class="col">
+    <div class="card">
+      <div class="card-header"><span class="card-title"><i class="bi bi-bar-chart"></i> Par type de dépense</span></div>
+      <div class="card-body">
+        {% if stats_type %}
+        <div class="chart-bar-container">
+          {% for s in stats_type %}
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:15px;">
+                  {% if s.type_frais == 'transport' %}🚌{% elif s.type_frais == 'hebergement' %}🏨{% elif s.type_frais == 'restauration' %}🍽️{% else %}📦{% endif %}
+                </span>
+                <span style="font-size:13px;font-weight:500;">{{ s.type_frais|capfirst }}</span>
+                <span style="font-size:11.5px;color:var(--text-muted);">· {{ s.nb }}</span>
+              </div>
+              <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);">{{ s.total|floatformat:0 }} MAD</span>
+            </div>
+            {% if total_global > 0 %}
+            <div class="chart-bar-outer">
+              <div class="chart-bar-inner" style="width:{% widthratio s.total total_global 100 %}%;
+                {% if s.type_frais == 'transport' %}background:var(--accent){% elif s.type_frais == 'hebergement' %}background:#7c5cfc{% elif s.type_frais == 'restauration' %}background:var(--warning){% else %}background:var(--text-muted){% endif %}">
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:28px 20px;"><i class="bi bi-bar-chart empty-icon"></i><div class="empty-title">Aucune donnée</div></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Top employés -->
+{% if stats_employe %}
+<div class="card" style="margin-top:18px;">
+  <div class="card-header">
+    <span class="card-title"><i class="bi bi-people"></i> Top dépenses par employé</span>
+  </div>
+  <div class="card-body">
+    {% for s in stats_employe %}
+    <div class="employe-row">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7c5cfc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">
+          {{ s.employe__first_name|first|upper|default:s.employe__username|first|upper }}
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:13.5px;">{{ s.employe__first_name }} {{ s.employe__last_name }}</div>
+          <div style="font-size:11.5px;color:var(--text-muted);">{{ s.nb }} frais</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        {% if total_global > 0 %}
+        <div class="chart-bar-outer" style="width:120px;">
+          <div class="chart-bar-inner" style="width:{% widthratio s.total total_global 100 %}%;background:var(--accent);"></div>
+        </div>
+        {% endif %}
+        <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--accent);min-width:90px;text-align:right;">{{ s.total|floatformat:0 }} MAD</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

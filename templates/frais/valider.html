@@ -1,0 +1,76 @@
+{% extends "base/base.html" %}
+{% block title %}Validation — GestionFrais{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'frais:liste' %}">Frais</a><span class="breadcrumb-sep">/</span>
+<span class="breadcrumb-active">Validation</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Valider un frais</h1>
+    <p class="page-subtitle">Approuver ou refuser cette demande de remboursement</p>
+  </div>
+</div>
+
+<div style="max-width:600px;">
+  <!-- Summary card -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <span class="card-title"><i class="bi bi-receipt"></i> Demande de remboursement</span>
+      {% include "includes/badge_statut.html" with statut=frais.statut label=frais.get_statut_display %}
+    </div>
+    <div class="card-body">
+      <div class="grid-2">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Employé</div>
+          <div style="font-weight:600;">{{ frais.employe.get_full_name|default:frais.employe.username }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Mission</div>
+          <div style="font-weight:600;">{{ frais.mission.destination }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Type</div>
+          <div>{{ frais.get_type_frais_display }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Montant</div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--accent);">{{ frais.montant|floatformat:2 }} MAD</div>
+        </div>
+      </div>
+      {% if frais.description %}
+      <div class="divider"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Description</div>
+      <div style="font-size:13.5px;color:var(--text-secondary);">{{ frais.description }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Decision form -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="bi bi-check2-circle"></i> Votre décision</span>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Décision <span class="required">*</span></label>
+          {{ form.statut }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Commentaire <span style="color:var(--text-muted);font-weight:400;">(obligatoire en cas de refus)</span></label>
+          {{ form.commentaire_manager }}
+          {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors.0 }}</div>{% endif %}
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> Confirmer</button>
+          <a href="{% url 'frais:detail' frais.pk %}" class="btn btn-outline">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

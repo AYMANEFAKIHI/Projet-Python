@@ -1,0 +1,78 @@
+{% extends "base/base.html" %}
+{% block title %}Utilisateurs — GestionFrais{% endblock %}
+{% block breadcrumb %}<span class="breadcrumb-active">Utilisateurs</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Utilisateurs</h1>
+    <p class="page-subtitle">Gestion des comptes de la plateforme ({{ users.count }} utilisateur{{ users.count|pluralize }})</p>
+  </div>
+  <a href="{% url 'accounts:creer_utilisateur' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nouvel utilisateur</a>
+</div>
+
+<div class="filter-bar">
+  <form method="get" style="display:flex;gap:10px;align-items:center;width:100%;flex-wrap:wrap;">
+    <i class="bi bi-search text-muted"></i>
+    <input type="text" name="q" value="{{ q }}" placeholder="Nom, username, email…" style="flex:1;min-width:160px;max-width:280px;">
+    <select name="role">
+      <option value="">Tous les rôles</option>
+      {% for val, lbl in role_choices %}
+      <option value="{{ val }}" {% if role == val %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm">Rechercher</button>
+    {% if q or role %}<a href="{% url 'accounts:gestion_utilisateurs' %}" class="btn btn-ghost btn-sm">Effacer</a>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Département</th><th>Manager</th><th>Statut</th><th style="text-align:right">Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7c5cfc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">
+                {{ u.first_name|first|upper|default:u.username|first|upper }}
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:13.5px;">{{ u.get_full_name|default:"—" }}</div>
+                <div style="font-size:11.5px;color:var(--text-muted);">@{{ u.username }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="td-muted">{{ u.email|default:"—" }}</td>
+          <td><span class="role-chip {% if u.role == 'admin' %}admin{% elif u.role == 'manager' %}manager{% else %}employe{% endif %}">{{ u.get_role_display }}</span></td>
+          <td class="td-muted">{{ u.departement|default:"—" }}</td>
+          <td class="td-muted">{{ u.manager.get_full_name|default:"—" }}</td>
+          <td>
+            {% if u.is_active %}<span class="badge badge-valid">Actif</span>
+            {% else %}<span class="badge badge-refused">Inactif</span>{% endif %}
+          </td>
+          <td style="text-align:right;">
+            <div style="display:flex;gap:4px;justify-content:flex-end;">
+              <a href="{% url 'accounts:modifier_utilisateur' u.pk %}" class="btn btn-ghost btn-icon btn-sm" title="Modifier"><i class="bi bi-pencil"></i></a>
+              {% if u != request.user %}
+              <a href="{% url 'accounts:supprimer_utilisateur' u.pk %}" class="btn btn-ghost btn-icon btn-sm" title="Désactiver" style="color:var(--danger)"><i class="bi bi-person-x"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state" style="padding:32px;">
+            <i class="bi bi-people empty-icon"></i>
+            <div class="empty-title">Aucun utilisateur trouvé</div>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

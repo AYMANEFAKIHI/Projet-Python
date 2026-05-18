@@ -1,0 +1,84 @@
+{% extends "base/base.html" %}
+{% block title %}Missions — GestionFrais{% endblock %}
+{% block breadcrumb %}<span class="breadcrumb-active">Missions</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Missions</h1>
+    <p class="page-subtitle">{% if user.is_admin or user.is_manager_role %}Toutes les missions de votre périmètre{% else %}Vos déplacements professionnels{% endif %}</p>
+  </div>
+  {% if not user.is_admin %}
+  <a href="{% url 'missions:creer' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Nouvelle mission</a>
+  {% endif %}
+</div>
+
+<div class="filter-bar">
+  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%">
+    <i class="bi bi-funnel text-muted"></i>
+    <select name="statut">
+      <option value="">Tous les statuts</option>
+      <option value="en_cours"  {% if statut_filtre == 'en_cours'  %}selected{% endif %}>En cours</option>
+      <option value="terminee"  {% if statut_filtre == 'terminee'  %}selected{% endif %}>Terminée</option>
+      <option value="annulee"   {% if statut_filtre == 'annulee'   %}selected{% endif %}>Annulée</option>
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-search"></i> Filtrer</button>
+    <a href="{% url 'missions:liste' %}" class="btn btn-ghost btn-sm">Réinitialiser</a>
+  </form>
+</div>
+
+{% if missions %}
+<div class="mission-grid">
+  {% for m in missions %}
+  <div class="mission-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+      <div class="mission-destination">
+        <i class="bi bi-geo-alt-fill"></i> {{ m.destination }}
+      </div>
+      {% if m.statut == 'en_cours' %}<span class="badge badge-ongoing">En cours</span>
+      {% elif m.statut == 'terminee' %}<span class="badge badge-done">Terminée</span>
+      {% else %}<span class="badge badge-refused">Annulée</span>{% endif %}
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div class="mission-meta-row">
+        <i class="bi bi-calendar3"></i>
+        {{ m.date_debut }} → {{ m.date_fin }}
+        <span class="badge badge-autre" style="margin-left:6px;">{{ m.duree }}j</span>
+      </div>
+      {% if user.is_admin or user.is_manager_role %}
+      <div class="mission-meta-row">
+        <i class="bi bi-person"></i> {{ m.employe.get_full_name|default:m.employe.username }}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="mission-objective">{{ m.objectif }}</div>
+
+    <div class="mission-foot">
+      <div>
+        <div class="mission-amount">{{ m.total_frais|floatformat:2 }} MAD</div>
+        <div class="mission-amount-label">Total frais</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <a href="{% url 'missions:detail' m.pk %}" class="btn btn-ghost btn-icon btn-sm" title="Voir"><i class="bi bi-eye"></i></a>
+        {% if user == m.employe or user.is_admin %}
+        <a href="{% url 'missions:modifier' m.pk %}" class="btn btn-ghost btn-icon btn-sm" title="Modifier"><i class="bi bi-pencil"></i></a>
+        <a href="{% url 'missions:supprimer' m.pk %}" class="btn btn-ghost btn-icon btn-sm" title="Supprimer" style="color:var(--danger)"><i class="bi bi-trash"></i></a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <i class="bi bi-geo-alt empty-icon"></i>
+  <div class="empty-title">Aucune mission trouvée</div>
+  <div class="empty-desc">{% if not user.is_admin %}Créez votre première mission de déplacement.{% endif %}</div>
+  {% if not user.is_admin %}
+  <a href="{% url 'missions:creer' %}" class="btn btn-primary btn-sm">Créer une mission</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base/base.html" %}
+{% block title %}Mon profil — GestionFrais{% endblock %}
+{% block breadcrumb %}<span class="breadcrumb-active">Profil</span>{% endblock %}
+
+{% block content %}
+{% if request.GET.force_pwd %}
+<div class="alert alert-warning"><i class="bi bi-shield-exclamation"></i> Votre compte vient d'être créé par un administrateur. Veuillez changer votre mot de passe avant de continuer.</div>
+{% endif %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Mon profil</h1>
+    <p class="page-subtitle">Gérez vos informations personnelles et votre sécurité</p>
+  </div>
+</div>
+
+<div style="max-width:680px;display:flex;flex-direction:column;gap:20px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="bi bi-person-circle"></i> Informations personnelles</span>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border-subtle);">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#7c5cfc);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0;">
+          {{ user.first_name|first|upper|default:user.username|first|upper }}
+        </div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">{{ user.get_full_name|default:user.username }}</div>
+          <div style="font-size:12px;color:var(--text-muted);">{{ user.email }}</div>
+          <span class="role-chip {% if user.is_admin %}admin{% elif user.is_manager_role %}manager{% else %}employe{% endif %}" style="margin-top:6px;display:inline-block;">
+            {{ user.get_role_display }}
+          </span>
+        </div>
+      </div>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="update_profil" value="1">
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">Prénom</label>{{ form.first_name }}{% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors.0 }}</div>{% endif %}</div>
+          <div class="form-group"><label class="form-label">Nom</label>{{ form.last_name }}</div>
+        </div>
+        <div class="form-group"><label class="form-label">Email</label>{{ form.email }}{% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}</div>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">Téléphone</label>{{ form.telephone }}</div>
+          <div class="form-group"><label class="form-label">Département</label>{{ form.departement }}</div>
+        </div>
+        <div class="form-group"><label class="form-label">Photo de profil</label>{{ form.photo }}</div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Enregistrer</button>
+          <a href="{% url 'dashboard:index' %}" class="btn btn-outline">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="bi bi-shield-lock"></i> Changer le mot de passe</span></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="change_password" value="1">
+        <div class="form-group"><label class="form-label">Mot de passe actuel</label>{{ pwd_form.old_password }}{% if pwd_form.old_password.errors %}<div class="form-error">{{ pwd_form.old_password.errors.0 }}</div>{% endif %}</div>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">Nouveau mot de passe</label>{{ pwd_form.new_password1 }}{% if pwd_form.new_password1.errors %}<div class="form-error">{{ pwd_form.new_password1.errors.0 }}</div>{% endif %}</div>
+          <div class="form-group"><label class="form-label">Confirmer</label>{{ pwd_form.new_password2 }}{% if pwd_form.new_password2.errors %}<div class="form-error">{{ pwd_form.new_password2.errors.0 }}</div>{% endif %}</div>
+        </div>
+        <div class="divider"></div>
+        <button type="submit" class="btn btn-warning"><i class="bi bi-key"></i> Modifier le mot de passe</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
