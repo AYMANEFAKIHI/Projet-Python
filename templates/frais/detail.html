@@ -66,11 +66,11 @@
         <span style="color:var(--text-secondary);font-size:13.5px;line-height:1.5;">{{ frais.description }}</span>
       </div>
       {% endif %}
-      {% if frais.validé_par %}
+      {% if frais.valide_par %}
       <div class="divider"></div>
       <div class="detail-row">
         <span class="detail-key">Décidé par</span>
-        <span class="detail-val">{{ frais.validé_par.get_full_name }}</span>
+        <span class="detail-val">{{ frais.valide_par.get_full_name }}</span>
       </div>
       <div class="detail-row">
         <span class="detail-key">Le</span>

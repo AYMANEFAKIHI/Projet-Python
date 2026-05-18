@@ -151,7 +151,7 @@ def valider_frais(request, pk):
     form = ValidationForm(request.POST or None, instance=frais)
     if request.method == 'POST' and form.is_valid():
         f = form.save(commit=False)
-        f.validé_par      = user
+        f.valide_par      = user
         f.date_validation = timezone.now()
         f.save()
         messages.success(request, f'Frais {f.get_statut_display().lower()} avec succès.')

@@ -111,7 +111,7 @@ def export_csv(request):
             str(f.montant),
             f.date_frais.strftime('%d/%m/%Y'),
             f.get_statut_display(),
-            f.validé_par.get_full_name() if f.validé_par else '—',
+            f.valide_par.get_full_name() if f.valide_par else '—',
             f.commentaire_manager or '—',
         ])
     return response
